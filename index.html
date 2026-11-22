@@ -1,1 +1,448 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080b14">
+  <title>Prompt Arena | AI Image Competition</title>
+  <meta name="description" content="Prompt Arena - AI Image Competition. Submit your AI-generated artwork.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #080b14;
+      --panel: #101725;
+      --border: #24334a;
+      --text: #f3f7ff;
+      --muted: #9baac0;
+      --cyan: #39dcff;
+      --blue: #647cff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      width: 100%;
+      padding: 22px 7%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 23px;
+      font-weight: 700;
+      letter-spacing: -1px;
+    }
+
+    .logo span { color: var(--cyan); }
+
+    .event-label {
+      color: var(--cyan);
+      font-size: 12px;
+      letter-spacing: 2px;
+      font-weight: 700;
+    }
+
+    .hero {
+      max-width: 1250px;
+      margin: auto;
+      padding: 75px 30px 45px;
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      align-items: center;
+      gap: 65px;
+    }
+
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 12px;
+      letter-spacing: 3px;
+      font-weight: 700;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: clamp(48px, 6vw, 82px);
+      line-height: 1.02;
+      letter-spacing: -4px;
+      margin-bottom: 24px;
+    }
+
+    h1 span { color: var(--cyan); }
+
+    .hero-description {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.8;
+      max-width: 500px;
+    }
+
+    .hero-art {
+      min-height: 350px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 50% 40%, #194e77 0%, #14263d 30%, #101725 70%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-art::before {
+      content: "";
+      position: absolute;
+      width: 240px;
+      height: 240px;
+      border: 1px solid #39dcff66;
+      transform: rotate(45deg);
+      box-shadow: 0 0 80px #39dcff22;
+    }
+
+    .hero-art-content {
+      position: relative;
+      text-align: center;
+    }
+
+    .hero-art-content strong {
+      display: block;
+      font-family: 'Space Grotesk';
+      font-size: 48px;
+      color: var(--cyan);
+    }
+
+    .hero-art-content p {
+      color: #c2d7e9;
+      letter-spacing: 4px;
+      font-size: 11px;
+      margin-top: 10px;
+    }
+
+    .submission-section {
+      max-width: 1250px;
+      margin: auto;
+      padding: 20px 30px 90px;
+    }
+
+    .section-heading {
+      margin-bottom: 25px;
+    }
+
+    .section-heading h2 {
+      font-family: 'Space Grotesk';
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+
+    .section-heading p { color: var(--muted); }
+
+    .submission-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 35px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 35px;
+    }
+
+    .field { margin-bottom: 23px; }
+
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 16px;
+      background: #080e19;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      color: white;
+      outline: none;
+      font: inherit;
+    }
+
+    input:focus { border-color: var(--cyan); }
+
+    .upload-box {
+      min-height: 260px;
+      border: 1px dashed #4b7694;
+      border-radius: 13px;
+      background: #0b1320;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 25px;
+      text-align: center;
+      cursor: pointer;
+      overflow: hidden;
+    }
+
+    .upload-box:hover { border-color: var(--cyan); }
+
+    .upload-symbol {
+      font-size: 45px;
+      color: var(--cyan);
+      margin-bottom: 15px;
+    }
+
+    .upload-box p { color: var(--muted); font-size: 13px; margin-top: 9px; }
+
+    #imageInput { display: none; }
+
+    #preview {
+      display: none;
+      width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      border-radius: 9px;
+      margin-top: 15px;
+    }
+
+    .submit-button {
+      width: 100%;
+      padding: 17px;
+      border: none;
+      border-radius: 9px;
+      background: var(--cyan);
+      color: #06111c;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .submit-button:hover { background: #8cecff; }
+
+    .submit-button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+      margin-top: 14px;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+    }
+
+    @media (max-width: 800px) {
+      .hero {
+        grid-template-columns: 1fr;
+        padding: 55px 22px 35px;
+        gap: 35px;
+      }
+
+      .hero-art { min-height: 240px; }
+
+      h1 {
+        font-size: clamp(45px, 11vw, 65px);
+        letter-spacing: -2px;
+      }
+
+      .submission-section { padding: 20px 18px 60px; }
+
+      .submission-card {
+        grid-template-columns: 1fr;
+        padding: 23px;
+        gap: 15px;
+      }
+    }
+
+    @media (max-width: 420px) {
+      .topbar { padding: 18px; }
+      .logo { font-size: 19px; }
+      .event-label { font-size: 9px; letter-spacing: 1px; }
+      .section-heading h2 { font-size: 26px; }
+      .submission-card { padding: 18px; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header class="topbar">
+    <div class="logo">PROMPT<span>ARENA</span></div>
+    <div class="event-label">AI IMAGE COMPETITION</div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div>
+        <div class="eyebrow">CREATE · IMAGINE · COMPETE</div>
+        <h1>Beyond<br>Imagination<span>.</span></h1>
+        <p class="hero-description">
+          Welcome to Prompt Arena. Transform your imagination into
+          extraordinary AI-generated artwork. Upload your best creation
+          and be part of the competition.
+        </p>
+      </div>
+
+      <div class="hero-art">
+        <div class="hero-art-content">
+          <strong>PA.</strong>
+          <p>THE FUTURE IS YOURS</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="submission-section">
+      <div class="section-heading">
+        <div class="eyebrow">PARTICIPANT PORTAL</div>
+        <h2>Submit Your Creation</h2>
+        <p>Enter your details and upload one AI-generated image.</p>
+      </div>
+
+      <form class="submission-card" id="submissionForm">
+        <div>
+          <div class="field">
+            <label for="studentName">Student Name</label>
+            <input
+              type="text"
+              id="studentName"
+              placeholder="Enter your full name"
+              maxlength="100"
+              required
+            >
+          </div>
+
+          <div class="field">
+            <label for="collegeName">College Name</label>
+            <input
+              type="text"
+              id="collegeName"
+              placeholder="Enter your college name"
+              maxlength="150"
+              required
+            >
+          </div>
+
+          <button class="submit-button" id="submitButton" type="submit">
+            SUBMIT YOUR ARTWORK →
+          </button>
+
+          <p class="note">
+            By submitting, you confirm that this is your own competition
+            entry. Only one image is accepted per participant identity.
+          </p>
+
+          <div id="status" role="status" aria-live="polite"></div>
+        </div>
+
+        <div>
+          <label>Upload Your AI Artwork</label>
+          <label class="upload-box" for="imageInput">
+            <span class="upload-symbol">＋</span>
+            <strong id="uploadText">Choose Your Image</strong>
+            <p>JPG, PNG or WEBP · Maximum 5 MB</p>
+            <img id="preview" alt="Selected artwork preview">
+          </label>
+          <input
+            type="file"
+            id="imageInput"
+            accept="image/jpeg,image/png,image/webp"
+            required
+          >
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    PROMPT ARENA · AI IMAGE COMPETITION
+  </footer>
+
+  <script>
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+    const uploadText = document.getElementById("uploadText");
+    const form = document.getElementById("submissionForm");
+    const statusBox = document.getElementById("status");
+    const submitButton = document.getElementById("submitButton");
+
+    let selectedImage = null;
+
+    imageInput.addEventListener("change", () => {
+      const file = imageInput.files[0];
+      statusBox.textContent = "";
+      selectedImage = null;
+
+      if (!file) return;
+
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
+      if (!allowedTypes.includes(file.type)) {
+        statusBox.textContent = "Please select a JPG, PNG or WEBP image.";
+        imageInput.value = "";
+        preview.style.display = "none";
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        statusBox.textContent = "Image must be smaller than 5 MB.";
+        imageInput.value = "";
+        preview.style.display = "none";
+        return;
+      }
+
+      selectedImage = file;
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = "block";
+      uploadText.textContent = file.name;
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const studentName = document.getElementById("studentName").value.trim();
+      const collegeName = document.getElementById("collegeName").value.trim();
+
+      if (!studentName || !collegeName || !selectedImage) {
+        statusBox.textContent = "Please complete all fields and select an image.";
+        return;
+      }
+
+      statusBox.textContent =
+        "Submission service is not connected yet. Please wait for the final setup.";
+
+      // Cloud submission will be connected after backend setup.
+    });
+  </script>
+
+</body>
+  </html>
