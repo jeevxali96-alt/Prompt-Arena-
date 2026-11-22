@@ -387,62 +387,117 @@
     PROMPT ARENA · AI IMAGE COMPETITION
   </footer>
 
-  <script>
-    const imageInput = document.getElementById("imageInput");
-    const preview = document.getElementById("preview");
-    const uploadText = document.getElementById("uploadText");
-    const form = document.getElementById("submissionForm");
-    const statusBox = document.getElementById("status");
-    const submitButton = document.getElementById("submitButton");
+  
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = "PASTE_YOUR_PROJECT_URL_HERE";
+  const SUPABASE_KEY = "PASTE_YOUR_PUBLISHABLE_KEY_HERE";
 
-    let selectedImage = null;
+  const supabaseClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
 
-    imageInput.addEventListener("change", () => {
-      const file = imageInput.files[0];
-      statusBox.textContent = "";
-      selectedImage = null;
+  const imageInput = document.getElementById("imageInput");
+  const preview = document.getElementById("preview");
+  const uploadText = document.getElementById("uploadText");
+  const form = document.getElementById("submissionForm");
+  const statusBox = document.getElementById("status");
+  const submitButton = document.getElementById("submitButton");
 
-      if (!file) return;
+  let selectedImage = null;
 
-      const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+  imageInput.addEventListener("change", () => {
+    const file = imageInput.files[0];
+    statusBox.textContent = "";
+    selectedImage = null;
 
-      if (!allowedTypes.includes(file.type)) {
-        statusBox.textContent = "Please select a JPG, PNG or WEBP image.";
-        imageInput.value = "";
-        preview.style.display = "none";
-        return;
-      }
+    if (!file) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        statusBox.textContent = "Image must be smaller than 5 MB.";
-        imageInput.value = "";
-        preview.style.display = "none";
-        return;
-      }
+    const allowed = ["image/jpeg", "image/png", "image/webp"];
 
-      selectedImage = file;
-      preview.src = URL.createObjectURL(file);
-      preview.style.display = "block";
-      uploadText.textContent = file.name;
-    });
+    if (!allowed.includes(file.type)) {
+      statusBox.textContent = "Please select JPG, PNG or WEBP.";
+      imageInput.value = "";
+      preview.style.display = "none";
+      return;
+    }
 
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
+    if (file.size > 5 * 1024 * 1024) {
+      statusBox.textContent = "Image must be smaller than 5 MB.";
+      imageInput.value = "";
+      preview.style.display = "none";
+      return;
+    }
 
-      const studentName = document.getElementById("studentName").value.trim();
-      const collegeName = document.getElementById("collegeName").value.trim();
+    selectedImage = file;
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+    uploadText.textContent = file.name;
+  });
 
-      if (!studentName || !collegeName || !selectedImage) {
-        statusBox.textContent = "Please complete all fields and select an image.";
-        return;
-      }
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const studentName =
+      document.getElementById("studentName").value.trim();
+
+    const collegeName =
+      document.getElementById("collegeName").value.trim();
+
+    if (!studentName || !collegeName || !selectedImage) {
+      statusBox.textContent = "Complete all fields and select an image.";
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "UPLOADING...";
+    statusBox.textContent = "Uploading your artwork...";
+
+    const extension = selectedImage.name.split(".").pop().toLowerCase();
+    const imagePath = crypto.randomUUID() + "." + extension;
+
+    try {
+      const { error: uploadError } = await supabaseClient
+        .storage
+        .from("prompt-arena-images")
+        .upload(imagePath, selectedImage, {
+          contentType: selectedImage.type,
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { error: insertError } = await supabaseClient
+        .from("submissions")
+        .insert([{
+          student_name: studentName,
+          college_name: collegeName,
+          image_path: imagePath
+        }]);
+
+      if (insertError) throw insertError;
 
       statusBox.textContent =
-        "Submission service is not connected yet. Please wait for the final setup.";
+        "Success! Your artwork has been submitted.";
 
-      // Cloud submission will be connected after backend setup.
-    });
-  </script>
+      form.reset();
+      selectedImage = null;
+      preview.removeAttribute("src");
+      preview.style.display = "none";
+      uploadText.textContent = "Choose Your Image";
+
+    } catch (error) {
+      console.error(error);
+      statusBox.textContent =
+        error.message || "Submission failed. Please try again.";
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = "SUBMIT YOUR ARTWORK →";
+    }
+  });
+        </script>
+  
 
 </body>
   </html>
