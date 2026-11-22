@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prompt Arena | Admin Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080b14;color:#f3f7ff;font-family:Arial,sans-serif}
+header{padding:22px 6%;border-bottom:1px solid #24334a;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:23px;font-weight:800}.logo span{color:#39dcff}
+button{background:#39dcff;color:#06111c;border:0;padding:13px 20px;border-radius:7px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+main{max-width:1200px;margin:auto;padding:35px 20px}
+h1{font-size:32px}
+.muted{color:#9baac0}
+.panel{background:#101725;border:1px solid #24334a;border-radius:14px;padding:25px;margin:20px 0}
+input{width:100%;padding:14px;margin:9px 0 18px;background:#080e19;border:1px solid #34445c;border-radius:7px;color:white}
+#gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px}
+.art{background:#101725;border:1px solid #24334a;border-radius:12px;overflow:hidden}
+.art img{width:100%;height:240px;object-fit:contain;background:#080e19}
+.details{padding:16px;line-height:1.7;overflow-wrap:anywhere}
+#status{margin-top:15px;color:#39dcff}
+.hidden{display:none}
+@media(max-width:500px){header{padding:18px}main{padding:20px 14px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">PROMPT<span>ARENA</span> ADMIN</div>
+<button id="logout" class="hidden">LOGOUT</button>
+</header>
+
+<main>
+<section id="loginPanel" class="panel">
+<h1>Admin Login</h1>
+<p class="muted">Authorized administrator access only.</p>
+<form id="loginForm">
+<label>Email</label>
+<input id="email" type="email" required placeholder="Admin email">
+<label>Password</label>
+<input id="password" type="password" required placeholder="Admin password">
+<button type="submit" id="loginButton">LOGIN</button>
+</form>
+<div id="loginStatus"></div>
+</section>
+
+<section id="dashboard" class="hidden">
+<h1>Submission Gallery</h1>
+<p class="muted" id="count">Loading submissions...</p>
+<button id="refresh">REFRESH GALLERY</button>
+<div id="status"></div>
+<div id="gallery" style="margin-top:25px"></div>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://oskeorlpcpwixogngplx.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_KwzJMVsjO5Pde4GuG0-3Rg_TkFQ-Dn0";
+
+const BUCKET = "Prompt Arena - images";
+const ADMIN_UID = "26ca7369-2f27-43e2-896a-0b78aef573f3";
+
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+const loginPanel = document.getElementById("loginPanel");
+const dashboard = document.getElementById("dashboard");
+const logout = document.getElementById("logout");
+const gallery = document.getElementById("gallery");
+const statusBox = document.getElementById("status");
+
+async function loadGallery() {
+  statusBox.textContent = "Loading artwork...";
+  gallery.innerHTML = "";
+
+  const { data, error } = await db
+    .from("submissions")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    statusBox.textContent = error.message;
+    return;
+  }
+
+  document.getElementById("count").textContent =
+    data.length + " submissions received";
+
+  if (!data.length) {
+    statusBox.textContent = "No submissions yet.";
+    return;
+  }
+
+  for (const item of data) {
+    const { data: imageData, error: imageError } = await db
+      .storage
+      .from(BUCKET)
+      .createSignedUrl(item.image_path, 3600);
+
+    const card = document.createElement("article");
+    card.className = "art";
+
+    if (!imageError && imageData?.signedUrl) {
+      const img = document.createElement("img");
+      img.src = imageData.signedUrl;
+      img.alt = "Participant artwork";
+      card.appendChild(img);
+    } else {
+      const missing = document.createElement("div");
+      missing.className = "details";
+      missing.textContent = "Image unavailable: " +
+        (imageError?.message || "Unknown error");
+      card.appendChild(missing);
+    }
+
+    const details = document.createElement("div");
+    details.className = "details";
+
+    const name = document.createElement("strong");
+    name.textContent = item.student_name;
+
+    const college = document.createElement("div");
+    college.textContent = item.college_name;
+
+    const date = document.createElement("small");
+    date.className = "muted";
+    date.textContent = new Date(item.created_at).toLocaleString();
+
+    details.append(name, college, date);
+    card.appendChild(details);
+    gallery.appendChild(card);
+  }
+
+  statusBox.textContent = "Gallery updated successfully.";
+}
+
+document.getElementById("loginForm")
+.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const button = document.getElementById("loginButton");
+  const message = document.getElementById("loginStatus");
+
+  button.disabled = true;
+  message.textContent = "Checking login...";
+
+  const { data, error } = await db.auth.signInWithPassword({
+    email: document.getElementById("email").value.trim(),
+    password: document.getElementById("password").value
+  });
+
+  button.disabled = false;
+
+  if (error) {
+    message.textContent = error.message;
+    return;
+  }
+
+  if (data.user.id !== ADMIN_UID) {
+    await db.auth.signOut();
+    message.textContent = "Access denied. Admin account only.";
+    return;
+  }
+
+  message.textContent = "";
+  await showDashboard();
+});
+
+async function showDashboard() {
+  loginPanel.classList.add("hidden");
+  dashboard.classList.remove("hidden");
+  logout.classList.remove("hidden");
+  await loadGallery();
+}
+
+logout.addEventListener("click", async () => {
+  await db.auth.signOut();
+  location.reload();
+});
+
+document.getElementById("refresh")
+.addEventListener("click", loadGallery);
+
+async function checkSession() {
+  const { data } = await db.auth.getSession();
+  const user = data.session?.user;
+
+  if (user && user.id === ADMIN_UID) {
+    await showDashboard();
+  } else if (user) {
+    await db.auth.signOut();
+  }
+}
+
+checkSession();
+</script>
+</body>
+</html>
