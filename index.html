@@ -460,7 +460,7 @@
     try {
       const { error: uploadError } = await supabaseClient
         .storage
-        .from("prompt-arena-images")
+        .from("Prompt Arena - images")
         .upload(imagePath, selectedImage, {
           contentType: selectedImage.type,
           upsert: false
