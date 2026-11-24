@@ -74,69 +74,91 @@ const logout = document.getElementById("logout");
 const gallery = document.getElementById("gallery");
 const statusBox = document.getElementById("status");
 
+let galleryLoadInProgress = false;
+
 async function loadGallery() {
+  // Prevent overlapping refreshes from rendering the same records twice.
+  if (galleryLoadInProgress) return;
+  galleryLoadInProgress = true;
+
   statusBox.textContent = "Loading artwork...";
-  gallery.innerHTML = "";
+  gallery.replaceChildren();
 
-  const { data, error } = await db
-    .from("submissions")
-    .select("*")
-    .order("created_at", { ascending: false });
+  try {
+    const { data, error } = await db
+      .from("submissions")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    statusBox.textContent = error.message;
-    return;
-  }
+    if (error) throw error;
 
-  document.getElementById("count").textContent =
-    data.length + " submissions received";
+    // Use the database row ID as the unique key. This protects the UI
+    // if the API ever returns the same row more than once.
+    const uniqueItems = [];
+    const seenIds = new Set();
 
-  if (!data.length) {
-    statusBox.textContent = "No submissions yet.";
-    return;
-  }
-
-  for (const item of data) {
-    const { data: imageData, error: imageError } = await db
-      .storage
-      .from(BUCKET)
-      .createSignedUrl(item.image_path, 3600);
-
-    const card = document.createElement("article");
-    card.className = "art";
-
-    if (!imageError && imageData?.signedUrl) {
-      const img = document.createElement("img");
-      img.src = imageData.signedUrl;
-      img.alt = "Participant artwork";
-      card.appendChild(img);
-    } else {
-      const missing = document.createElement("div");
-      missing.className = "details";
-      missing.textContent = "Image unavailable: " +
-        (imageError?.message || "Unknown error");
-      card.appendChild(missing);
+    for (const item of (data || [])) {
+      if (!item.id || seenIds.has(item.id)) continue;
+      seenIds.add(item.id);
+      uniqueItems.push(item);
     }
 
-    const details = document.createElement("div");
-    details.className = "details";
+    document.getElementById("count").textContent =
+      uniqueItems.length + " submissions received";
 
-    const name = document.createElement("strong");
-    name.textContent = item.student_name;
+    if (!uniqueItems.length) {
+      statusBox.textContent = "No submissions yet.";
+      return;
+    }
 
-    const college = document.createElement("div");
-    college.textContent = item.college_name;
+    for (const item of uniqueItems) {
+      const { data: imageData, error: imageError } = await db
+        .storage
+        .from(BUCKET)
+        .createSignedUrl(item.image_path, 3600);
 
-    const date = document.createElement("small");
-    date.className = "muted";
-    date.textContent = new Date(item.created_at).toLocaleString();
+      const card = document.createElement("article");
+      card.className = "art";
+      card.dataset.submissionId = item.id;
 
-    details.append(name, college, date);
-    card.appendChild(details);
-    gallery.appendChild(card);
+      if (!imageError && imageData?.signedUrl) {
+        const img = document.createElement("img");
+        img.src = imageData.signedUrl;
+        img.alt = "Participant artwork";
+        card.appendChild(img);
+      } else {
+        const missing = document.createElement("div");
+        missing.className = "details";
+        missing.textContent = "Image unavailable: " +
+          (imageError?.message || "Unknown error");
+        card.appendChild(missing);
+      }
+
+      const details = document.createElement("div");
+      details.className = "details";
+
+      const name = document.createElement("strong");
+      name.textContent = item.student_name;
+
+      const college = document.createElement("div");
+      college.textContent = item.college_name;
+
+      const date = document.createElement("small");
+      date.className = "muted";
+      date.textContent = new Date(item.created_at).toLocaleString();
+
+      details.append(name, college, date);
+      card.appendChild(details);
+      gallery.appendChild(card);
+    }
+
+    statusBox.textContent = "Gallery updated successfully.";
+  } catch (error) {
+    console.error("Gallery loading failed:", error);
+    statusBox.textContent = error.message || "Unable to load gallery.";
+  } finally {
+    galleryLoadInProgress = false;
   }
-
-  statusBox.textContent = "Gallery updated successfully.";
 }
 
 document.getElementById("loginForm")
