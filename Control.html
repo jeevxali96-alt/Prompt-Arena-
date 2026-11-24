@@ -1,0 +1,550 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prompt Arena | Event Control</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080b14;color:#f3f7ff;font-family:Arial,sans-serif}
+header{padding:20px 6%;border-bottom:1px solid #24334a;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:22px;font-weight:800}.logo span{color:#39dcff}
+main{max-width:1000px;margin:auto;padding:25px 16px}
+.panel{background:#101725;border:1px solid #24334a;border-radius:13px;padding:22px;margin:18px 0}
+h1{font-size:28px}h2{font-size:20px;margin-top:0}
+.muted{color:#9baac0;font-size:14px}
+label{display:block;margin:12px 0 7px;font-size:14px}
+input,select{width:100%;padding:13px;background:#080e19;border:1px solid #34445c;border-radius:7px;color:white;margin-bottom:10px}
+button{padding:12px 16px;border:0;border-radius:7px;background:#39dcff;color:#06111c;font-weight:bold;margin:5px 5px 5px 0;cursor:pointer}
+button.secondary{background:#26364d;color:white}
+button.danger{background:#a93645;color:white}
+button:disabled{opacity:.5}
+.hidden{display:none!important}
+.item{padding:14px;border:1px solid #34445c;border-radius:9px;margin:10px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row button{flex:0 0 auto}
+#status{padding:12px 0;color:#39dcff;white-space:pre-wrap}
+#timer{font-size:42px;font-weight:800;color:#39dcff;margin:12px 0}
+small{color:#9baac0}
+@media(max-width:500px){header{padding:16px}main{padding:15px 12px}.panel{padding:16px}h1{font-size:24px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">PROMPT<span>ARENA</span> CONTROL</div>
+  <button id="logout" class="hidden">LOGOUT</button>
+</header>
+
+<main>
+<section id="loginPanel" class="panel">
+  <h1>Admin Login</h1>
+  <p class="muted">Authorized leaders only.</p>
+  <form id="loginForm">
+    <label>Email</label>
+    <input id="email" type="email" required>
+    <label>Password</label>
+    <input id="password" type="password" required>
+    <button id="loginButton">LOGIN</button>
+  </form>
+  <div id="loginStatus"></div>
+</section>
+
+<section id="dashboard" class="hidden">
+  <h1>Event Control Center</h1>
+  <p class="muted">Create batches, manage rounds and control the live event.</p>
+
+  <div class="panel">
+    <h2>Batch Management</h2>
+    <label>Batch name</label>
+    <input id="batchName" placeholder="Example: Batch 1">
+    <button id="createBatch">CREATE BATCH</button>
+    <div id="batchList"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Round Management</h2>
+    <label>Select batch</label>
+    <select id="roundBatch"></select>
+    <label>Round name</label>
+    <input id="roundName" placeholder="Example: Round 1">
+    <label>Duration (minutes)</label>
+    <input id="roundDuration" type="number" min="1" value="5">
+    <button id="createRound">ADD ROUND</button>
+    <div id="roundList"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Live Event Control</h2>
+    <label>Active batch</label>
+    <select id="activeBatch"></select>
+    <label>Current round</label>
+    <select id="activeRound"></select>
+    <div id="eventStatus" class="muted">Loading event status...</div>
+    <div id="timer">--:--</div>
+    <div class="row">
+      <button id="startEvent">START / RESTART</button>
+      <button id="pauseEvent" class="secondary">PAUSE</button>
+      <button id="resumeEvent" class="secondary">RESUME</button>
+      <button id="stopEvent" class="danger">STOP</button>
+    </div>
+    <p class="muted">START / RESTART always resets the selected round to its full duration.</p>
+  </div>
+
+  <div id="status" role="status"></div>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "https://oskeorlpcpwixogngplx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_KwzJMVsjO5Pde4GuG0-3Rg_TkFQ-Dn0";
+const ADMIN_UID = "26ca7369-2f27-43e2-896a-0b78aef573f3";
+
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+const $ = id => document.getElementById(id);
+let batches = [];
+let rounds = [];
+let control = null;
+let timerInterval = null;
+
+function message(text){
+  $("status").textContent = text;
+}
+
+function showDashboard(){
+  $("loginPanel").classList.add("hidden");
+  $("dashboard").classList.remove("hidden");
+  $("logout").classList.remove("hidden");
+}
+
+async function ensureControl(){
+  const {data,error} = await db.from("event_control")
+    .select("*").limit(1).maybeSingle();
+
+  if(error) throw error;
+  if(data){control=data;return;}
+
+  const {data:created,error:createError} = await db
+    .from("event_control")
+    .insert({event_status:"stopped"})
+    .select().single();
+
+  if(createError) throw createError;
+  control=created;
+}
+
+async function loadBatches(){
+  const {data,error} = await db.from("event_batches")
+    .select("*").order("created_at",{ascending:true});
+  if(error) throw error;
+  batches=data||[];
+
+  $("batchList").replaceChildren();
+  $("roundBatch").replaceChildren();
+  $("activeBatch").replaceChildren();
+
+  if(!batches.length){
+    $("batchList").textContent="No batches created yet.";
+  }
+
+  batches.forEach(batch=>{
+    const option1=new Option(batch.batch_name,batch.id);
+    const option2=new Option(batch.batch_name,batch.id);
+    $("roundBatch").add(option1);
+    $("activeBatch").add(option2);
+
+    const item=document.createElement("div");
+    item.className="item";
+
+    const title=document.createElement("strong");
+    title.textContent=batch.batch_name;
+
+    const edit=document.createElement("button");
+    edit.textContent="EDIT";
+    edit.className="secondary";
+    edit.onclick=()=>editBatch(batch);
+
+    const del=document.createElement("button");
+    del.textContent="DELETE";
+    del.className="danger";
+    del.onclick=()=>deleteBatch(batch);
+
+    item.append(title,edit,del);
+    $("batchList").append(item);
+  });
+
+  if(control?.batch_id){
+    $("activeBatch").value=control.batch_id;
+    $("roundBatch").value=control.batch_id;
+  }
+
+  await loadRounds();
+}
+
+async function editBatch(batch){
+  const name=prompt("Enter new batch name:",batch.batch_name);
+  if(name===null) return;
+  if(!name.trim()) return alert("Batch name cannot be empty.");
+
+  const {error}=await db.from("event_batches")
+    .update({batch_name:name.trim()}).eq("id",batch.id);
+
+  if(error) return message(error.message);
+  message("Batch updated.");
+  await loadBatches();
+}
+
+async function deleteBatch(batch){
+  if(control?.batch_id===batch.id &&
+    ["running","paused"].includes(control.event_status)){
+    return alert("Stop the event before deleting its active batch.");
+  }
+
+  if(!confirm("Delete batch '"+batch.batch_name+"'? Related records may prevent deletion.")) return;
+
+  const {error}=await db.from("event_batches")
+    .delete().eq("id",batch.id);
+
+  if(error) return message("Could not delete batch: "+error.message);
+  message("Batch deleted.");
+  await refreshAll();
+}
+
+async function loadRounds(){
+  const batchId=$("roundBatch").value;
+  $("roundList").replaceChildren();
+  $("activeRound").replaceChildren();
+
+  if(!batchId){
+    $("roundList").textContent="Create a batch first.";
+    return;
+  }
+
+  const {data,error}=await db.from("event_rounds")
+    .select("*").eq("batch_id",batchId)
+    .order("round_order",{ascending:true});
+
+  if(error) throw error;
+  rounds=data||[];
+
+  if(!rounds.length) $("roundList").textContent="No rounds in this batch.";
+
+  rounds.forEach(round=>{
+    const option=new Option(round.round_name,round.id);
+    $("activeRound").add(option);
+
+    const item=document.createElement("div");
+    item.className="item";
+
+    const title=document.createElement("strong");
+    title.textContent=round.round_order+". "+round.round_name;
+
+    const duration=document.createElement("small");
+    duration.textContent=" · "+Math.floor(round.duration_seconds/60)+" min";
+
+    const edit=document.createElement("button");
+    edit.textContent="EDIT";
+    edit.className="secondary";
+    edit.onclick=()=>editRound(round);
+
+    const del=document.createElement("button");
+    del.textContent="DELETE";
+    del.className="danger";
+    del.onclick=()=>deleteRound(round);
+
+    item.append(title,duration,edit,del);
+    $("roundList").append(item);
+  });
+
+  if(control?.current_round_id &&
+     control.batch_id===batchId){
+    $("activeRound").value=control.current_round_id;
+  }
+}
+
+async function editRound(round){
+  if(control?.current_round_id===round.id &&
+    ["running","paused"].includes(control.event_status)){
+    return alert("Stop this round before editing it.");
+  }
+
+  const name=prompt("Round name:",round.round_name);
+  if(name===null) return;
+  if(!name.trim()) return alert("Round name cannot be empty.");
+
+  const mins=prompt("Duration in minutes:",round.duration_seconds/60);
+  if(mins===null) return;
+  const seconds=Math.floor(Number(mins)*60);
+  if(!Number.isFinite(seconds)||seconds<=0) return alert("Invalid duration.");
+
+  const {error}=await db.from("event_rounds")
+    .update({round_name:name.trim(),duration_seconds:seconds})
+    .eq("id",round.id);
+
+  if(error) return message(error.message);
+  message("Round updated.");
+  await loadRounds();
+}
+
+async function deleteRound(round){
+  if(control?.current_round_id===round.id &&
+    ["running","paused"].includes(control.event_status)){
+    return alert("Stop this round before deleting it.");
+  }
+
+  if(!confirm("Delete "+round.round_name+"?")) return;
+
+  const {error}=await db.from("event_rounds")
+    .delete().eq("id",round.id);
+
+  if(error) return message("Could not delete round: "+error.message);
+  message("Round deleted.");
+  await refreshAll();
+}
+
+$("createBatch").onclick=async()=>{
+  const name=$("batchName").value.trim();
+  if(!name) return message("Enter a batch name.");
+
+  const {error}=await db.from("event_batches")
+    .insert({batch_name:name});
+
+  if(error) return message(error.message);
+
+  $("batchName").value="";
+  message("Batch created.");
+  await refreshAll();
+};
+
+$("roundBatch").onchange=()=>loadRounds().catch(e=>message(e.message));
+
+$("createRound").onclick=async()=>{
+  const batchId=$("roundBatch").value;
+  const name=$("roundName").value.trim();
+  const minutes=Number($("roundDuration").value);
+
+  if(!batchId) return message("Select a batch.");
+  if(!name) return message("Enter a round name.");
+  if(!Number.isFinite(minutes)||minutes<=0)
+    return message("Enter a valid duration.");
+
+  const order=rounds.length
+    ? Math.max(...rounds.map(r=>r.round_order))+1
+    : 1;
+
+  const {error}=await db.from("event_rounds").insert({
+    batch_id:batchId,
+    round_name:name,
+    round_order:order,
+    duration_seconds:Math.floor(minutes*60)
+  });
+
+  if(error) return message(error.message);
+
+  $("roundName").value="";
+  message("Round created.");
+  await loadRounds();
+};
+
+$("activeBatch").onchange=async()=>{
+  $("roundBatch").value=$("activeBatch").value;
+  await loadRounds();
+};
+
+async function saveControl(values){
+  const {data,error}=await db.from("event_control")
+    .update({...values,updated_at:new Date().toISOString()})
+    .eq("id",control.id).select().single();
+
+  if(error) throw error;
+  control=data;
+  renderControl();
+}
+
+function renderControl(){
+  if(!control) return;
+
+  $("eventStatus").textContent=
+    "Event status: "+(control.event_status||"stopped").toUpperCase();
+
+  if(control.batch_id) $("activeBatch").value=control.batch_id;
+  if(control.current_round_id) $("activeRound").value=control.current_round_id;
+
+  updateTimer();
+}
+
+function updateTimer(){
+  if(!control) return;
+
+  let remaining=Number(control.remaining_seconds||0);
+
+  if(control.event_status==="running" && control.deadline_at){
+    remaining=Math.max(0,Math.ceil(
+      (new Date(control.deadline_at).getTime()-Date.now())/1000
+    ));
+
+    if(remaining===0){
+      $("timer").textContent="00:00";
+      finishRound();
+      return;
+    }
+  }
+
+  const mins=Math.floor(remaining/60);
+  const secs=remaining%60;
+  $("timer").textContent=
+    String(mins).padStart(2,"0")+":"+String(secs).padStart(2,"0");
+}
+
+async function finishRound(){
+  if(!control || control.event_status!=="running") return;
+  try{
+    await saveControl({
+      event_status:"completed",
+      remaining_seconds:0,
+      deadline_at:null
+    });
+    message("Round time over.");
+  }catch(e){message(e.message);}
+}
+
+$("startEvent").onclick=async()=>{
+  const batchId=$("activeBatch").value;
+  const roundId=$("activeRound").value;
+
+  if(!batchId||!roundId) return message("Select a batch and round.");
+
+  const round=rounds.find(r=>r.id===roundId);
+  if(!round) return message("Round details not loaded. Select the batch again.");
+
+  if(!confirm("Start/restart this round from its full duration?")) return;
+
+  const now=new Date();
+  const deadline=new Date(now.getTime()+round.duration_seconds*1000);
+
+  try{
+    await saveControl({
+      batch_id:batchId,
+      current_round_id:roundId,
+      event_status:"running",
+      started_at:now.toISOString(),
+      deadline_at:deadline.toISOString(),
+      remaining_seconds:round.duration_seconds
+    });
+    message("Event started. Timer reset to full duration.");
+  }catch(e){message(e.message);}
+};
+
+$("pauseEvent").onclick=async()=>{
+  if(control?.event_status!=="running")
+    return message("Event is not running.");
+
+  const remaining=Math.max(0,Math.ceil(
+    (new Date(control.deadline_at).getTime()-Date.now())/1000
+  ));
+
+  try{
+    await saveControl({
+      event_status:"paused",
+      remaining_seconds:remaining,
+      deadline_at:null
+    });
+    message("Event paused.");
+  }catch(e){message(e.message);}
+};
+
+$("resumeEvent").onclick=async()=>{
+  if(control?.event_status!=="paused")
+    return message("Event is not paused.");
+
+  const remaining=Number(control.remaining_seconds||0);
+  if(remaining<=0) return message("Time is over. Restart the round.");
+
+  const deadline=new Date(Date.now()+remaining*1000);
+
+  try{
+    await saveControl({
+      event_status:"running",
+      deadline_at:deadline.toISOString()
+    });
+    message("Event resumed.");
+  }catch(e){message(e.message);}
+};
+
+$("stopEvent").onclick=async()=>{
+  if(!confirm("Stop the event now? A future START will reset the timer.")) return;
+
+  try{
+    await saveControl({
+      event_status:"stopped",
+      deadline_at:null,
+      remaining_seconds:null
+    });
+    message("Event stopped. Next start will use the full round duration.");
+  }catch(e){message(e.message);}
+};
+
+async function refreshAll(){
+  await ensureControl();
+  await loadBatches();
+  renderControl();
+}
+
+async function checkSession(){
+  const {data}=await db.auth.getSession();
+  const user=data.session?.user;
+
+  if(user?.id===ADMIN_UID){
+    showDashboard();
+    try{await refreshAll();}
+    catch(e){message(e.message);}
+  }else if(user){
+    await db.auth.signOut();
+  }
+}
+
+$("loginForm").onsubmit=async e=>{
+  e.preventDefault();
+  $("loginButton").disabled=true;
+  $("loginStatus").textContent="Checking login...";
+
+  const {data,error}=await db.auth.signInWithPassword({
+    email:$("email").value.trim(),
+    password:$("password").value
+  });
+
+  $("loginButton").disabled=false;
+
+  if(error){
+    $("loginStatus").textContent=error.message;
+    return;
+  }
+
+  if(data.user.id!==ADMIN_UID){
+    await db.auth.signOut();
+    $("loginStatus").textContent="Access denied. Admin account only.";
+    return;
+  }
+
+  $("loginStatus").textContent="";
+  showDashboard();
+
+  try{await refreshAll();}
+  catch(e){message(e.message);}
+};
+
+$("logout").onclick=async()=>{
+  await db.auth.signOut();
+  location.reload();
+};
+
+checkSession();
+
+timerInterval=setInterval(()=>{
+  if(control?.event_status==="running") updateTimer();
+},500);
+</script>
+</body>
+</html>
