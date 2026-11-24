@@ -127,22 +127,24 @@ async function loadGallery() {
       card.className = "art";
       card.dataset.submissionId = item.id;
 
-      const { data: imageData, error: imageError } = await db
-        .storage
-        .from(BUCKET)
-        .createSignedUrl(item.image_path, 3600);
+      if (item.image_path) {
+        const { data: imageData, error: imageError } = await db
+          .storage
+          .from(BUCKET)
+          .createSignedUrl(item.image_path, 3600);
 
-      if (!imageError && imageData?.signedUrl) {
-        const img = document.createElement("img");
-        img.src = imageData.signedUrl;
-        img.alt = "Participant artwork";
-        card.appendChild(img);
-      } else {
-        const missing = document.createElement("div");
-        missing.className = "details";
-        missing.textContent = "Image unavailable: " +
-          (imageError?.message || "Unknown error");
-        card.appendChild(missing);
+        if (!imageError && imageData?.signedUrl) {
+          const img = document.createElement("img");
+          img.src = imageData.signedUrl;
+          img.alt = "Participant artwork";
+          card.appendChild(img);
+        } else {
+          const missing = document.createElement("div");
+          missing.className = "details";
+          missing.textContent = "Image unavailable: " +
+            (imageError?.message || "Unknown error");
+          card.appendChild(missing);
+        }
       }
 
       const details = document.createElement("div");
@@ -165,7 +167,7 @@ async function loadGallery() {
 
       const deleteButton = document.createElement("button");
       deleteButton.className = "deleteBtn";
-      deleteButton.textContent = "DELETE IMAGE";
+      deleteButton.textContent = "DELETE IMAGE & DETAILS";
 
       deleteButton.addEventListener("click", () => {
         deleteSubmission(item, deleteButton);
@@ -186,12 +188,15 @@ async function loadGallery() {
   }
 }
 
+
+// DELETE IMAGE + DATABASE DETAILS
 async function deleteSubmission(item, button) {
   const confirmed = confirm(
-    "Are you sure you want to permanently delete this participant's image?\n\n" +
+    "PERMANENT DELETE CONFIRMATION\n\n" +
     "Name: " + (item.student_name || "Unknown") +
+    "\nCollege: " + (item.college_name || "Unknown") +
     "\nRegister Number: " + (item.register_number || "Unknown") +
-    "\n\nThis action cannot be undone."
+    "\n\nBoth image and student details will be deleted.\n\nContinue?"
   );
 
   if (!confirmed) return;
@@ -202,19 +207,36 @@ async function deleteSubmission(item, button) {
   statusBox.textContent = "Deleting submission...";
 
   try {
-    if (!item.image_path) {
-      throw new Error("Image path is missing. Cannot safely delete.");
+    if (!item.id) {
+      throw new Error("Submission ID is missing.");
     }
 
-    // Delete the actual image from Supabase Storage first.
-    const { error: storageError } = await db
-      .storage
-      .from(BUCKET)
-      .remove([item.image_path]);
+    // STEP 1: Delete image from Storage if path exists.
+    if (item.image_path) {
+      const { error: storageError } = await db
+        .storage
+        .from(BUCKET)
+        .remove([item.image_path]);
 
-    if (storageError) throw storageError;
+      if (storageError) {
+        const message = storageError.message || "";
+        const statusCode = String(storageError.statusCode || "");
 
-    // Delete only the selected submission record.
+        const imageAlreadyMissing =
+          statusCode === "404" ||
+          /object not found/i.test(message);
+
+        // Continue only if the image is already missing.
+        if (!imageAlreadyMissing) {
+          throw new Error(
+            "Image deletion failed: " + message +
+            ". Student details have NOT been deleted."
+          );
+        }
+      }
+    }
+
+    // STEP 2: Delete only this submission's database record.
     const { data, error: databaseError } = await db
       .from("submissions")
       .delete()
@@ -225,23 +247,29 @@ async function deleteSubmission(item, button) {
 
     if (!data || data.length === 0) {
       throw new Error(
-        "Image deleted, but database record was not deleted. Refresh and check."
+        "Database record was not deleted. Please refresh and check."
       );
     }
 
-    statusBox.textContent = "Image and submission deleted successfully.";
+    statusBox.textContent =
+      "SUCCESS! Image and student details deleted.";
 
+    // STEP 3: Refresh gallery.
     await loadGallery();
 
   } catch (error) {
     console.error("Delete failed:", error);
-    statusBox.textContent = "Delete failed: " + error.message;
+
+    statusBox.textContent =
+      "DELETE FAILED: " + error.message;
 
     button.disabled = false;
-    button.textContent = "DELETE IMAGE";
+    button.textContent = "DELETE IMAGE & DETAILS";
   }
 }
 
+
+// ADMIN LOGIN
 document.getElementById("loginForm")
 .addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -275,6 +303,8 @@ document.getElementById("loginForm")
   }
 });
 
+
+// SHOW DASHBOARD
 async function showDashboard() {
   loginPanel.classList.add("hidden");
   dashboard.classList.remove("hidden");
@@ -282,14 +312,20 @@ async function showDashboard() {
   await loadGallery();
 }
 
+
+// LOGOUT
 logout.addEventListener("click", async () => {
   await db.auth.signOut();
   location.reload();
 });
 
+
+// REFRESH
 document.getElementById("refresh")
 .addEventListener("click", loadGallery);
 
+
+// CHECK EXISTING SESSION
 async function checkSession() {
   const { data } = await db.auth.getSession();
   const user = data.session?.user;
