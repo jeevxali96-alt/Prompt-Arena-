@@ -141,13 +141,17 @@ async function loadGallery() {
       name.textContent = item.student_name;
 
       const college = document.createElement("div");
-      college.textContent = item.college_name;
+      college.textContent = "College: " + (item.college_name || "Not provided");
+
+      const registerNumber = document.createElement("div");
+      registerNumber.textContent =
+        "Register Number: " + (item.register_number || "Not provided");
 
       const date = document.createElement("small");
       date.className = "muted";
       date.textContent = new Date(item.created_at).toLocaleString();
 
-      details.append(name, college, date);
+      details.append(name, college, registerNumber, date);
       card.appendChild(details);
       gallery.appendChild(card);
     }
