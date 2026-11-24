@@ -6,13 +6,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Prompt Arena | Admin Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#080b14;color:#f3f7ff;font-family:Arial,sans-serif}
 header{padding:22px 6%;border-bottom:1px solid #24334a;display:flex;justify-content:space-between;align-items:center}
-.logo{font-size:23px;font-weight:800}.logo span{color:#39dcff}
+.logo{font-size:23px;font-weight:800}
+.logo span{color:#39dcff}
 button{background:#39dcff;color:#06111c;border:0;padding:13px 20px;border-radius:7px;font-weight:bold;cursor:pointer}
-button:disabled{opacity:.5}
+button:disabled{opacity:.5;cursor:not-allowed}
 main{max-width:1200px;margin:auto;padding:35px 20px}
 h1{font-size:32px}
 .muted{color:#9baac0}
@@ -24,9 +26,16 @@ input{width:100%;padding:14px;margin:9px 0 18px;background:#080e19;border:1px so
 .details{padding:16px;line-height:1.7;overflow-wrap:anywhere}
 #status{margin-top:15px;color:#39dcff}
 .hidden{display:none}
-@media(max-width:500px){header{padding:18px}main{padding:20px 14px}h1{font-size:26px}}
+.deleteBtn{width:100%;margin-top:15px;background:#ff465d;color:white}
+.deleteBtn:hover{background:#dc243e}
+@media(max-width:500px){
+header{padding:18px}
+main{padding:20px 14px}
+h1{font-size:26px}
+}
 </style>
 </head>
+
 <body>
 <header>
 <div class="logo">PROMPT<span>ARENA</span> ADMIN</div>
@@ -37,19 +46,24 @@ input{width:100%;padding:14px;margin:9px 0 18px;background:#080e19;border:1px so
 <section id="loginPanel" class="panel">
 <h1>Admin Login</h1>
 <p class="muted">Authorized administrator access only.</p>
+
 <form id="loginForm">
 <label>Email</label>
 <input id="email" type="email" required placeholder="Admin email">
+
 <label>Password</label>
 <input id="password" type="password" required placeholder="Admin password">
+
 <button type="submit" id="loginButton">LOGIN</button>
 </form>
+
 <div id="loginStatus"></div>
 </section>
 
 <section id="dashboard" class="hidden">
 <h1>Submission Gallery</h1>
 <p class="muted" id="count">Loading submissions...</p>
+
 <button id="refresh">REFRESH GALLERY</button>
 <div id="status"></div>
 <div id="gallery" style="margin-top:25px"></div>
@@ -77,10 +91,9 @@ const statusBox = document.getElementById("status");
 let galleryLoadInProgress = false;
 
 async function loadGallery() {
-  // Prevent overlapping refreshes from rendering the same records twice.
   if (galleryLoadInProgress) return;
-  galleryLoadInProgress = true;
 
+  galleryLoadInProgress = true;
   statusBox.textContent = "Loading artwork...";
   gallery.replaceChildren();
 
@@ -92,8 +105,6 @@ async function loadGallery() {
 
     if (error) throw error;
 
-    // Use the database row ID as the unique key. This protects the UI
-    // if the API ever returns the same row more than once.
     const uniqueItems = [];
     const seenIds = new Set();
 
@@ -112,14 +123,14 @@ async function loadGallery() {
     }
 
     for (const item of uniqueItems) {
+      const card = document.createElement("article");
+      card.className = "art";
+      card.dataset.submissionId = item.id;
+
       const { data: imageData, error: imageError } = await db
         .storage
         .from(BUCKET)
         .createSignedUrl(item.image_path, 3600);
-
-      const card = document.createElement("article");
-      card.className = "art";
-      card.dataset.submissionId = item.id;
 
       if (!imageError && imageData?.signedUrl) {
         const img = document.createElement("img");
@@ -138,10 +149,11 @@ async function loadGallery() {
       details.className = "details";
 
       const name = document.createElement("strong");
-      name.textContent = item.student_name;
+      name.textContent = item.student_name || "Unknown participant";
 
       const college = document.createElement("div");
-      college.textContent = "College: " + (item.college_name || "Not provided");
+      college.textContent =
+        "College: " + (item.college_name || "Not provided");
 
       const registerNumber = document.createElement("div");
       registerNumber.textContent =
@@ -151,17 +163,82 @@ async function loadGallery() {
       date.className = "muted";
       date.textContent = new Date(item.created_at).toLocaleString();
 
-      details.append(name, college, registerNumber, date);
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "deleteBtn";
+      deleteButton.textContent = "DELETE IMAGE";
+
+      deleteButton.addEventListener("click", () => {
+        deleteSubmission(item, deleteButton);
+      });
+
+      details.append(name, college, registerNumber, date, deleteButton);
       card.appendChild(details);
       gallery.appendChild(card);
     }
 
     statusBox.textContent = "Gallery updated successfully.";
+
   } catch (error) {
     console.error("Gallery loading failed:", error);
     statusBox.textContent = error.message || "Unable to load gallery.";
   } finally {
     galleryLoadInProgress = false;
+  }
+}
+
+async function deleteSubmission(item, button) {
+  const confirmed = confirm(
+    "Are you sure you want to permanently delete this participant's image?\n\n" +
+    "Name: " + (item.student_name || "Unknown") +
+    "\nRegister Number: " + (item.register_number || "Unknown") +
+    "\n\nThis action cannot be undone."
+  );
+
+  if (!confirmed) return;
+
+  button.disabled = true;
+  button.textContent = "DELETING...";
+
+  statusBox.textContent = "Deleting submission...";
+
+  try {
+    if (!item.image_path) {
+      throw new Error("Image path is missing. Cannot safely delete.");
+    }
+
+    // Delete the actual image from Supabase Storage first.
+    const { error: storageError } = await db
+      .storage
+      .from(BUCKET)
+      .remove([item.image_path]);
+
+    if (storageError) throw storageError;
+
+    // Delete only the selected submission record.
+    const { data, error: databaseError } = await db
+      .from("submissions")
+      .delete()
+      .eq("id", item.id)
+      .select("id");
+
+    if (databaseError) throw databaseError;
+
+    if (!data || data.length === 0) {
+      throw new Error(
+        "Image deleted, but database record was not deleted. Refresh and check."
+      );
+    }
+
+    statusBox.textContent = "Image and submission deleted successfully.";
+
+    await loadGallery();
+
+  } catch (error) {
+    console.error("Delete failed:", error);
+    statusBox.textContent = "Delete failed: " + error.message;
+
+    button.disabled = false;
+    button.textContent = "DELETE IMAGE";
   }
 }
 
@@ -175,26 +252,27 @@ document.getElementById("loginForm")
   button.disabled = true;
   message.textContent = "Checking login...";
 
-  const { data, error } = await db.auth.signInWithPassword({
-    email: document.getElementById("email").value.trim(),
-    password: document.getElementById("password").value
-  });
+  try {
+    const { data, error } = await db.auth.signInWithPassword({
+      email: document.getElementById("email").value.trim(),
+      password: document.getElementById("password").value
+    });
 
-  button.disabled = false;
+    if (error) throw error;
 
-  if (error) {
+    if (data.user.id !== ADMIN_UID) {
+      await db.auth.signOut();
+      throw new Error("Access denied. Admin account only.");
+    }
+
+    message.textContent = "";
+    await showDashboard();
+
+  } catch (error) {
     message.textContent = error.message;
-    return;
+  } finally {
+    button.disabled = false;
   }
-
-  if (data.user.id !== ADMIN_UID) {
-    await db.auth.signOut();
-    message.textContent = "Access denied. Admin account only.";
-    return;
-  }
-
-  message.textContent = "";
-  await showDashboard();
 });
 
 async function showDashboard() {
