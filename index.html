@@ -2,523 +2,715 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#080b14">
-  <title>Prompt Arena | AI Image Competition</title>
-  <meta name="description" content="Prompt Arena - AI Image Competition. Submit your AI-generated artwork.">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080b14">
+<title>Prompt Arena | AI Image Competition</title>
+<meta name="description" content="Prompt Arena - AI Image Competition. Submit your AI-generated artwork.">
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <style>
-    :root {
-      --bg: #080b14;
-      --panel: #101725;
-      --border: #24334a;
-      --text: #f3f7ff;
-      --muted: #9baac0;
-      --cyan: #39dcff;
-      --blue: #647cff;
-    }
+<style>
+:root {
+  --bg:#080b14;
+  --panel:#101725;
+  --border:#24334a;
+  --text:#f3f7ff;
+  --muted:#9baac0;
+  --cyan:#39dcff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  min-height:100vh;
+}
+.topbar{
+  width:100%;
+  padding:22px 7%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  border-bottom:1px solid var(--border);
+}
+.logo{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:23px;
+  font-weight:700;
+  letter-spacing:-1px;
+}
+.logo span{color:var(--cyan)}
+.event-label{
+  color:var(--cyan);
+  font-size:12px;
+  letter-spacing:2px;
+  font-weight:700;
+}
+.hero{
+  max-width:1250px;
+  margin:auto;
+  padding:75px 30px 45px;
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  align-items:center;
+  gap:65px;
+}
+.eyebrow{
+  color:var(--cyan);
+  font-size:12px;
+  letter-spacing:3px;
+  font-weight:700;
+  margin-bottom:20px;
+}
+h1{
+  font-family:'Space Grotesk',sans-serif;
+  font-size:clamp(48px,6vw,82px);
+  line-height:1.02;
+  letter-spacing:-4px;
+  margin-bottom:24px;
+}
+h1 span{color:var(--cyan)}
+.hero-description{
+  color:var(--muted);
+  font-size:17px;
+  line-height:1.8;
+  max-width:500px;
+}
+.hero-art{
+  min-height:350px;
+  border:1px solid var(--border);
+  border-radius:20px;
+  background:radial-gradient(circle at 50% 40%,#194e77 0%,#14263d 30%,#101725 70%);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+.hero-art-content{text-align:center}
+.hero-art-content strong{
+  display:block;
+  font-family:'Space Grotesk';
+  font-size:48px;
+  color:var(--cyan);
+}
+.hero-art-content p{
+  color:#c2d7e9;
+  letter-spacing:4px;
+  font-size:11px;
+  margin-top:10px;
+}
+.event-info{
+  max-width:1190px;
+  margin:0 auto 30px;
+  padding:0 30px;
+}
+.event-panel{
+  background:#101725;
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px 24px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+  flex-wrap:wrap;
+}
+.event-panel strong{color:var(--cyan)}
+#timer{
+  font-family:'Space Grotesk';
+  font-size:27px;
+  font-weight:700;
+  color:var(--cyan);
+}
+#eventMessage{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:5px;
+}
+.submission-section{
+  max-width:1250px;
+  margin:auto;
+  padding:20px 30px 90px;
+}
+.section-heading{margin-bottom:25px}
+.section-heading h2{
+  font-family:'Space Grotesk';
+  font-size:32px;
+  margin-bottom:10px;
+}
+.section-heading p{color:var(--muted)}
+.submission-card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:35px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:35px;
+}
+.field{margin-bottom:23px}
+label{
+  display:block;
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:10px;
+}
+input[type="text"]{
+  width:100%;
+  padding:16px;
+  background:#080e19;
+  border:1px solid var(--border);
+  border-radius:9px;
+  color:white;
+  outline:none;
+  font:inherit;
+}
+input:focus{border-color:var(--cyan)}
+.upload-box{
+  min-height:260px;
+  border:1px dashed #4b7694;
+  border-radius:13px;
+  background:#0b1320;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  padding:25px;
+  text-align:center;
+  cursor:pointer;
+  overflow:hidden;
+}
+.upload-box:hover{border-color:var(--cyan)}
+.upload-symbol{
+  font-size:45px;
+  color:var(--cyan);
+  margin-bottom:15px;
+}
+.upload-box p{
+  color:var(--muted);
+  font-size:13px;
+  margin-top:9px;
+}
+#imageInput{display:none}
+#preview{
+  display:none;
+  width:100%;
+  max-height:280px;
+  object-fit:contain;
+  border-radius:9px;
+  margin-top:15px;
+}
+.submit-button{
+  width:100%;
+  padding:17px;
+  border:none;
+  border-radius:9px;
+  background:var(--cyan);
+  color:#06111c;
+  font-size:15px;
+  font-weight:800;
+  cursor:pointer;
+  font-family:inherit;
+}
+.submit-button:hover{background:#8cecff}
+.submit-button:disabled{opacity:.5;cursor:not-allowed}
+.note{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+  margin-top:14px;
+}
+#status{
+  margin-top:15px;
+  font-size:14px;
+  line-height:1.6;
+}
+footer{
+  text-align:center;
+  padding:25px;
+  color:var(--muted);
+  border-top:1px solid var(--border);
+  font-size:12px;
+}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+/* TIME OUT SCREEN */
+#timeoutScreen{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#050817;
+  overflow-y:auto;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+.timeout-content{
+  width:100%;
+  max-width:1100px;
+  text-align:center;
+}
+.timeout-art{
+  width:100%;
+  height:auto;
+  max-height:calc(100vh - 40px);
+  object-fit:contain;
+  display:block;
+  margin:auto;
+  border-radius:12px;
+}
+.timeout-caption{
+  color:#aab9d2;
+  font-size:13px;
+  margin-top:12px;
+}
+#timeoutBack{
+  margin-top:15px;
+  background:#101d32;
+  border:1px solid #29415f;
+  color:white;
+  padding:12px 22px;
+  border-radius:8px;
+  font-weight:700;
+  cursor:pointer;
+}
+#timeoutBack:hover{border-color:var(--cyan)}
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      min-height: 100vh;
-    }
-
-    .topbar {
-      width: 100%;
-      padding: 22px 7%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .logo {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 23px;
-      font-weight: 700;
-      letter-spacing: -1px;
-    }
-
-    .logo span { color: var(--cyan); }
-
-    .event-label {
-      color: var(--cyan);
-      font-size: 12px;
-      letter-spacing: 2px;
-      font-weight: 700;
-    }
-
-    .hero {
-      max-width: 1250px;
-      margin: auto;
-      padding: 75px 30px 45px;
-      display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      align-items: center;
-      gap: 65px;
-    }
-
-    .eyebrow {
-      color: var(--cyan);
-      font-size: 12px;
-      letter-spacing: 3px;
-      font-weight: 700;
-      margin-bottom: 20px;
-    }
-
-    h1 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(48px, 6vw, 82px);
-      line-height: 1.02;
-      letter-spacing: -4px;
-      margin-bottom: 24px;
-    }
-
-    h1 span { color: var(--cyan); }
-
-    .hero-description {
-      color: var(--muted);
-      font-size: 17px;
-      line-height: 1.8;
-      max-width: 500px;
-    }
-
-    .hero-art {
-      min-height: 350px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      background:
-        radial-gradient(circle at 50% 40%, #194e77 0%, #14263d 30%, #101725 70%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .hero-art::before {
-      content: "";
-      position: absolute;
-      width: 240px;
-      height: 240px;
-      border: 1px solid #39dcff66;
-      transform: rotate(45deg);
-      box-shadow: 0 0 80px #39dcff22;
-    }
-
-    .hero-art-content {
-      position: relative;
-      text-align: center;
-    }
-
-    .hero-art-content strong {
-      display: block;
-      font-family: 'Space Grotesk';
-      font-size: 48px;
-      color: var(--cyan);
-    }
-
-    .hero-art-content p {
-      color: #c2d7e9;
-      letter-spacing: 4px;
-      font-size: 11px;
-      margin-top: 10px;
-    }
-
-    .submission-section {
-      max-width: 1250px;
-      margin: auto;
-      padding: 20px 30px 90px;
-    }
-
-    .section-heading {
-      margin-bottom: 25px;
-    }
-
-    .section-heading h2 {
-      font-family: 'Space Grotesk';
-      font-size: 32px;
-      margin-bottom: 10px;
-    }
-
-    .section-heading p { color: var(--muted); }
-
-    .submission-card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 35px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 35px;
-    }
-
-    .field { margin-bottom: 23px; }
-
-    label {
-      display: block;
-      font-size: 14px;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
-
-    input[type="text"] {
-      width: 100%;
-      padding: 16px;
-      background: #080e19;
-      border: 1px solid var(--border);
-      border-radius: 9px;
-      color: white;
-      outline: none;
-      font: inherit;
-    }
-
-    input:focus { border-color: var(--cyan); }
-
-    .upload-box {
-      min-height: 260px;
-      border: 1px dashed #4b7694;
-      border-radius: 13px;
-      background: #0b1320;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      padding: 25px;
-      text-align: center;
-      cursor: pointer;
-      overflow: hidden;
-    }
-
-    .upload-box:hover { border-color: var(--cyan); }
-
-    .upload-symbol {
-      font-size: 45px;
-      color: var(--cyan);
-      margin-bottom: 15px;
-    }
-
-    .upload-box p { color: var(--muted); font-size: 13px; margin-top: 9px; }
-
-    #imageInput { display: none; }
-
-    #preview {
-      display: none;
-      width: 100%;
-      max-height: 280px;
-      object-fit: contain;
-      border-radius: 9px;
-      margin-top: 15px;
-    }
-
-    .submit-button {
-      width: 100%;
-      padding: 17px;
-      border: none;
-      border-radius: 9px;
-      background: var(--cyan);
-      color: #06111c;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      font-family: inherit;
-    }
-
-    .submit-button:hover { background: #8cecff; }
-
-    .submit-button:disabled {
-      opacity: .5;
-      cursor: not-allowed;
-    }
-
-    .note {
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.7;
-      margin-top: 14px;
-    }
-
-    #status {
-      margin-top: 15px;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    footer {
-      text-align: center;
-      padding: 25px;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      font-size: 12px;
-    }
-
-    @media (max-width: 800px) {
-      .hero {
-        grid-template-columns: 1fr;
-        padding: 55px 22px 35px;
-        gap: 35px;
-      }
-
-      .hero-art { min-height: 240px; }
-
-      h1 {
-        font-size: clamp(45px, 11vw, 65px);
-        letter-spacing: -2px;
-      }
-
-      .submission-section { padding: 20px 18px 60px; }
-
-      .submission-card {
-        grid-template-columns: 1fr;
-        padding: 23px;
-        gap: 15px;
-      }
-    }
-
-    @media (max-width: 420px) {
-      .topbar { padding: 18px; }
-      .logo { font-size: 19px; }
-      .event-label { font-size: 9px; letter-spacing: 1px; }
-      .section-heading h2 { font-size: 26px; }
-      .submission-card { padding: 18px; }
-    }
-  </style>
+@media(max-width:800px){
+  .hero{
+    grid-template-columns:1fr;
+    padding:55px 22px 35px;
+    gap:35px;
+  }
+  .hero-art{min-height:240px}
+  h1{
+    font-size:clamp(45px,11vw,65px);
+    letter-spacing:-2px;
+  }
+  .event-info{padding:0 18px}
+  .event-panel{padding:17px}
+  .submission-section{padding:20px 18px 60px}
+  .submission-card{
+    grid-template-columns:1fr;
+    padding:23px;
+    gap:15px;
+  }
+  #timeoutScreen{padding:10px}
+  .timeout-art{
+    max-height:none;
+    width:100%;
+  }
+}
+@media(max-width:420px){
+  .topbar{padding:18px}
+  .logo{font-size:19px}
+  .event-label{font-size:9px;letter-spacing:1px}
+  .section-heading h2{font-size:26px}
+  .submission-card{padding:18px}
+  #timer{font-size:23px}
+}
+</style>
 </head>
 
 <body>
 
-  <header class="topbar">
-    <div class="logo">PROMPT<span>ARENA</span></div>
-    <div class="event-label">AI IMAGE COMPETITION</div>
-  </header>
+<header class="topbar">
+  <div class="logo">PROMPT<span>ARENA</span></div>
+  <div class="event-label">AI IMAGE COMPETITION</div>
+</header>
 
-  <main>
-    <section class="hero">
-      <div>
-        <div class="eyebrow">CREATE · IMAGINE · COMPETE</div>
-        <h1>Beyond<br>Imagination<span>.</span></h1>
-        <p class="hero-description">
-          Welcome to Prompt Arena. Transform your imagination into
-          extraordinary AI-generated artwork. Upload your best creation
-          and be part of the competition.
-        </p>
+<main id="mainContent">
+
+<section class="hero">
+  <div>
+    <div class="eyebrow">CREATE · IMAGINE · COMPETE</div>
+    <h1>Beyond<br>Imagination<span>.</span></h1>
+    <p class="hero-description">
+      Welcome to Prompt Arena. Transform your imagination into
+      extraordinary AI-generated artwork. Upload your best creation
+      and be part of the competition.
+    </p>
+  </div>
+  <div class="hero-art">
+    <div class="hero-art-content">
+      <strong>PA.</strong>
+      <p>THE FUTURE IS YOURS</p>
+    </div>
+  </div>
+</section>
+
+<section class="event-info">
+  <div class="event-panel">
+    <div>
+      <strong id="batchName">Loading event...</strong>
+      <p id="roundName">Checking current round</p>
+      <p id="eventMessage">Please wait...</p>
+    </div>
+    <div id="timer">--:--</div>
+  </div>
+</section>
+
+<section class="submission-section">
+  <div class="section-heading">
+    <div class="eyebrow">PARTICIPANT PORTAL</div>
+    <h2>Submit Your Creation</h2>
+    <p>Enter your details and upload one AI-generated image.</p>
+  </div>
+
+  <form class="submission-card" id="submissionForm">
+    <div>
+      <div class="field">
+        <label for="studentName">Student Name</label>
+        <input type="text" id="studentName"
+          placeholder="Enter your full name" maxlength="100" required>
       </div>
 
-      <div class="hero-art">
-        <div class="hero-art-content">
-          <strong>PA.</strong>
-          <p>THE FUTURE IS YOURS</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="submission-section">
-      <div class="section-heading">
-        <div class="eyebrow">PARTICIPANT PORTAL</div>
-        <h2>Submit Your Creation</h2>
-        <p>Enter your details and upload one AI-generated image.</p>
+      <div class="field">
+        <label for="collegeName">College Name</label>
+        <input type="text" id="collegeName"
+          placeholder="Enter your college name" maxlength="150" required>
       </div>
 
-      <form class="submission-card" id="submissionForm">
-        <div>
-          <div class="field">
-            <label for="studentName">Student Name</label>
-            <input
-              type="text"
-              id="studentName"
-              placeholder="Enter your full name"
-              maxlength="100"
-              required
-            >
-          </div>
+      <div class="field">
+        <label for="registerNumber">College Register Number</label>
+        <input type="text" id="registerNumber"
+          placeholder="Enter your register number" maxlength="50"
+          required autocomplete="off">
+      </div>
 
-          <div class="field">
-            <label for="collegeName">College Name</label>
-            <input
-              type="text"
-              id="collegeName"
-              placeholder="Enter your college name"
-              maxlength="150"
-              required
-            >
-          </div>
+      <button class="submit-button" id="submitButton" type="submit">
+        SUBMIT YOUR ARTWORK →
+      </button>
 
-          <div class="field">
-            <label for="registerNumber">College Register Number</label>
-            <input
-              type="text"
-              id="registerNumber"
-              placeholder="Enter your register number"
-              maxlength="50"
-              required
-              autocomplete="off"
-            >
-          </div>
+      <p class="note">
+        By submitting, you confirm that this is your own competition
+        entry. Only one image is accepted per participant identity.
+      </p>
+      <div id="status" role="status" aria-live="polite"></div>
+    </div>
 
-          <button class="submit-button" id="submitButton" type="submit">
-            SUBMIT YOUR ARTWORK →
-          </button>
+    <div>
+      <label>Upload Your AI Artwork</label>
+      <label class="upload-box" for="imageInput">
+        <span class="upload-symbol">＋</span>
+        <strong id="uploadText">Choose Your Image</strong>
+        <p>JPG, PNG or WEBP · Maximum 5 MB</p>
+        <img id="preview" alt="Selected artwork preview">
+      </label>
+      <input type="file" id="imageInput"
+        accept="image/jpeg,image/png,image/webp" required>
+    </div>
+  </form>
+</section>
+</main>
 
-          <p class="note">
-            By submitting, you confirm that this is your own competition
-            entry. Only one image is accepted per participant identity.
-          </p>
+<footer>PROMPT ARENA · AI IMAGE COMPETITION</footer>
 
-          <div id="status" role="status" aria-live="polite"></div>
-        </div>
+<!-- TIME OUT OVERLAY -->
+<section id="timeoutScreen" aria-live="assertive">
+  <div class="timeout-content">
+    <img class="timeout-art" src="timeout.png"
+      alt="Prompt Arena time expired. Bro, image enga? Crying robot artwork."
+      onerror="this.style.display='none';document.getElementById('timeoutFallback').style.display='block';">
+    <div id="timeoutFallback" style="display:none;color:white;padding:40px 10px">
+      <div style="font-size:75px">😭</div>
+      <h1 style="font-size:clamp(35px,8vw,65px);letter-spacing:-2px">
+        BRO, IMAGE ENGA? 😭
+      </h1>
+      <p>Time poiduchu bro... image mattum innum varalaya?</p>
+      <h2 style="color:#39dcff;margin-top:20px">00:00</h2>
+      <p style="margin-top:20px">Next round. New chance. 💪</p>
+    </div>
+    <p class="timeout-caption">Prompt Arena · Time expired</p>
+    <button id="timeoutBack" type="button">BACK TO EVENT PAGE</button>
+  </div>
+</section>
 
-        <div>
-          <label>Upload Your AI Artwork</label>
-          <label class="upload-box" for="imageInput">
-            <span class="upload-symbol">＋</span>
-            <strong id="uploadText">Choose Your Image</strong>
-            <p>JPG, PNG or WEBP · Maximum 5 MB</p>
-            <img id="preview" alt="Selected artwork preview">
-          </label>
-          <input
-            type="file"
-            id="imageInput"
-            accept="image/jpeg,image/png,image/webp"
-            required
-          >
-        </div>
-      </form>
-    </section>
-  </main>
-
-  <footer>
-    PROMPT ARENA · AI IMAGE COMPETITION
-  </footer>
-
-  
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  const SUPABASE_URL = "https://oskeorlpcpwixogngplx.supabase.co";
-  const SUPABASE_KEY = "sb_publishable_KwzJMVsjO5Pde4GuG0-3Rg_TkFQ-Dn0";
+const SUPABASE_URL = "https://oskeorlpcpwixogngplx.supabase.co";
+const SUPABASE_KEY = "sb_publishable_KwzJMVsjO5Pde4GuG0-3Rg_TkFQ-Dn0";
 
-  const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_KEY
-  );
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
-  const imageInput = document.getElementById("imageInput");
-  const preview = document.getElementById("preview");
-  const uploadText = document.getElementById("uploadText");
-  const form = document.getElementById("submissionForm");
-  const statusBox = document.getElementById("status");
-  const submitButton = document.getElementById("submitButton");
+const imageInput = document.getElementById("imageInput");
+const preview = document.getElementById("preview");
+const uploadText = document.getElementById("uploadText");
+const form = document.getElementById("submissionForm");
+const statusBox = document.getElementById("status");
+const submitButton = document.getElementById("submitButton");
+const timeoutScreen = document.getElementById("timeoutScreen");
 
-  let selectedImage = null;
+let selectedImage = null;
+let currentEvent = null;
+let timerInterval = null;
+let eventExpired = false;
 
-  imageInput.addEventListener("change", () => {
-    const file = imageInput.files[0];
-    statusBox.textContent = "";
-    selectedImage = null;
+function showTimeout() {
+  eventExpired = true;
+  timeoutScreen.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  submitButton.disabled = true;
+}
 
-    if (!file) return;
+function closeTimeout() {
+  timeoutScreen.style.display = "none";
+  document.body.style.overflow = "";
+}
 
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
+document.getElementById("timeoutBack").addEventListener("click", closeTimeout);
 
-    if (!allowed.includes(file.type)) {
-      statusBox.textContent = "Please select JPG, PNG or WEBP.";
-      imageInput.value = "";
-      preview.style.display = "none";
+function setEventMessage(message) {
+  document.getElementById("eventMessage").textContent = message;
+}
+
+function formatTime(seconds) {
+  const safe = Math.max(0, Math.floor(seconds));
+  const minutes = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return String(minutes).padStart(2,"0") + ":" +
+         String(secs).padStart(2,"0");
+}
+
+function updateTimerDisplay() {
+  if (!currentEvent) return;
+
+  const status = currentEvent.event_status;
+
+  if (status === "running" && currentEvent.deadline_at) {
+    const deadline = new Date(currentEvent.deadline_at).getTime();
+    const remaining = Math.ceil((deadline - Date.now()) / 1000);
+
+    document.getElementById("timer").textContent = formatTime(remaining);
+
+    if (remaining <= 0) {
+      showTimeout();
+    }
+  } else if (status === "paused") {
+    document.getElementById("timer").textContent =
+      formatTime(currentEvent.remaining_seconds || 0);
+    setEventMessage("Event paused. Please wait for the organizer.");
+  } else if (status === "completed") {
+    document.getElementById("timer").textContent = "00:00";
+    showTimeout();
+  } else {
+    document.getElementById("timer").textContent = "--:--";
+    setEventMessage("The event has not started yet.");
+  }
+}
+
+async function loadEventState() {
+  try {
+    const { data, error } = await supabaseClient.rpc("get_public_event_state");
+
+    if (error) throw error;
+
+    const event = Array.isArray(data) ? data[0] : data;
+
+    if (!event) {
+      currentEvent = null;
+      document.getElementById("batchName").textContent = "Prompt Arena";
+      document.getElementById("roundName").textContent = "No active round";
+      document.getElementById("timer").textContent = "--:--";
+      setEventMessage("Waiting for the organizer to start the event.");
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
-      statusBox.textContent = "Image must be smaller than 5 MB.";
-      imageInput.value = "";
-      preview.style.display = "none";
+    currentEvent = event;
+
+    document.getElementById("batchName").textContent =
+      event.batch_name || "Prompt Arena";
+
+    document.getElementById("roundName").textContent =
+      event.round_name || "Round not selected";
+
+    if (event.event_status === "running") {
+      setEventMessage("Event is live! Submit before time runs out.");
+    } else if (event.event_status === "paused") {
+      setEventMessage("Event paused. Please wait.");
+    } else if (event.event_status === "completed") {
+      setEventMessage("This round has ended.");
+    } else {
+      setEventMessage("Waiting for the organizer to start.");
+    }
+
+    updateTimerDisplay();
+  } catch (error) {
+    console.error("Event state error:", error);
+    setEventMessage("Unable to load event status. Please refresh.");
+  }
+}
+
+imageInput.addEventListener("change", () => {
+  const file = imageInput.files[0];
+  statusBox.textContent = "";
+  selectedImage = null;
+
+  if (!file) return;
+
+  const allowed = ["image/jpeg","image/png","image/webp"];
+
+  if (!allowed.includes(file.type)) {
+    statusBox.textContent = "Please select JPG, PNG or WEBP.";
+    imageInput.value = "";
+    preview.style.display = "none";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    statusBox.textContent = "Image must be smaller than 5 MB.";
+    imageInput.value = "";
+    preview.style.display = "none";
+    return;
+  }
+
+  selectedImage = file;
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = "block";
+  uploadText.textContent = file.name;
+});
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  if (eventExpired) {
+    showTimeout();
+    return;
+  }
+
+  const studentName =
+    document.getElementById("studentName").value.trim();
+
+  const collegeName =
+    document.getElementById("collegeName").value.trim();
+
+  const registerNumber =
+    document.getElementById("registerNumber").value.trim();
+
+  if (!studentName || !collegeName || !registerNumber || !selectedImage) {
+    statusBox.textContent = "Complete all fields and select an image.";
+    return;
+  }
+
+  submitButton.disabled = true;
+  submitButton.textContent = "CHECKING EVENT...";
+  statusBox.textContent = "Checking current round...";
+
+  try {
+    await loadEventState();
+
+    if (!currentEvent ||
+        currentEvent.event_status !== "running" ||
+        !currentEvent.deadline_at ||
+        new Date(currentEvent.deadline_at).getTime() <= Date.now()) {
+      showTimeout();
+      statusBox.textContent = "This round is no longer accepting submissions.";
       return;
     }
 
-    selectedImage = file;
-    preview.src = URL.createObjectURL(file);
-    preview.style.display = "block";
-    uploadText.textContent = file.name;
-  });
+    const batchId = currentEvent.batch_id;
+    const roundId = currentEvent.round_id;
 
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const studentName =
-      document.getElementById("studentName").value.trim();
-
-    const collegeName =
-      document.getElementById("collegeName").value.trim();
-
-    const registerNumber =
-      document.getElementById("registerNumber").value.trim();
-
-    if (!studentName || !collegeName || !registerNumber || !selectedImage) {
-      statusBox.textContent = "Complete all fields and select an image.";
+    if (!batchId || !roundId) {
+      statusBox.textContent = "The organizer has not selected a round yet.";
       return;
     }
 
-    submitButton.disabled = true;
     submitButton.textContent = "UPLOADING...";
     statusBox.textContent = "Uploading your artwork...";
 
     const extension = selectedImage.name.split(".").pop().toLowerCase();
-    const imagePath = crypto.randomUUID() + "." + extension;
+    const imagePath = batchId + "/" + roundId + "/" +
+      crypto.randomUUID() + "." + extension;
 
-    try {
-      const { error: uploadError } = await supabaseClient
-        .storage
-        .from("Prompt Arena - images")
-        .upload(imagePath, selectedImage, {
-          contentType: selectedImage.type,
-          upsert: false
-        });
+    const { error: uploadError } = await supabaseClient
+      .storage
+      .from("Prompt Arena - images")
+      .upload(imagePath, selectedImage, {
+        contentType: selectedImage.type,
+        upsert: false
+      });
 
-      if (uploadError) throw uploadError;
+    if (uploadError) {
+      if (uploadError.statusCode === "403" ||
+          uploadError.statusCode === "401" ||
+          uploadError.message.toLowerCase().includes("row-level security")) {
+        await loadEventState();
+        if (currentEvent &&
+            (currentEvent.event_status !== "running" ||
+             !currentEvent.deadline_at ||
+             new Date(currentEvent.deadline_at).getTime() <= Date.now())) {
+          showTimeout();
+          return;
+        }
+      }
+      throw uploadError;
+    }
 
-      const { error: insertError } = await supabaseClient
-        .from("submissions")
-        .insert([{
-          student_name: studentName,
-          college_name: collegeName,
-          register_number: registerNumber,
-          image_path: imagePath
-        }]);
+    const { error: insertError } = await supabaseClient
+      .from("submissions")
+      .insert([{
+        student_name: studentName,
+        college_name: collegeName,
+        register_number: registerNumber,
+        image_path: imagePath,
+        batch_id: batchId,
+        round_id: roundId
+      }]);
 
-      if (insertError) throw insertError;
+    if (insertError) throw insertError;
 
+    statusBox.textContent = "Success! Your artwork has been submitted.";
+    form.reset();
+    selectedImage = null;
+    preview.removeAttribute("src");
+    preview.style.display = "none";
+    uploadText.textContent = "Choose Your Image";
+
+  } catch (error) {
+    console.error("Submission error:", error);
+
+    if (error.code === "23505") {
       statusBox.textContent =
-        "Success! Your artwork has been submitted.";
-
-      form.reset();
-      selectedImage = null;
-      preview.removeAttribute("src");
-      preview.style.display = "none";
-      uploadText.textContent = "Choose Your Image";
-
-    } catch (error) {
-      console.error(error);
-      if (error.code === "23505") {
-        statusBox.textContent =
-          "This register number has already submitted an artwork from this college. Only one submission is allowed.";
+        "This register number has already submitted an artwork for this round.";
+    } else if (
+      error.message &&
+      error.message.toLowerCase().includes("row-level security")
+    ) {
+      await loadEventState();
+      if (currentEvent &&
+          (currentEvent.event_status !== "running" ||
+           !currentEvent.deadline_at ||
+           new Date(currentEvent.deadline_at).getTime() <= Date.now())) {
+        showTimeout();
       } else {
         statusBox.textContent =
-          error.message || "Submission failed. Please try again.";
+          "Submission was blocked. Please contact the event organizer.";
       }
-    } finally {
+    } else {
+      statusBox.textContent =
+        error.message || "Submission failed. Please try again.";
+    }
+  } finally {
+    if (!eventExpired) {
       submitButton.disabled = false;
       submitButton.textContent = "SUBMIT YOUR ARTWORK →";
     }
-  });
-        </script>
-  
+  }
+});
+
+loadEventState();
+timerInterval = setInterval(() => {
+  updateTimerDisplay();
+  loadEventState();
+}, 5000);
+</script>
 
 </body>
-  </html>
+</html>
