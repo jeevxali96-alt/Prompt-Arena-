@@ -352,6 +352,18 @@
             >
           </div>
 
+          <div class="field">
+            <label for="registerNumber">College Register Number</label>
+            <input
+              type="text"
+              id="registerNumber"
+              placeholder="Enter your register number"
+              maxlength="50"
+              required
+              autocomplete="off"
+            >
+          </div>
+
           <button class="submit-button" id="submitButton" type="submit">
             SUBMIT YOUR ARTWORK →
           </button>
@@ -445,7 +457,10 @@
     const collegeName =
       document.getElementById("collegeName").value.trim();
 
-    if (!studentName || !collegeName || !selectedImage) {
+    const registerNumber =
+      document.getElementById("registerNumber").value.trim();
+
+    if (!studentName || !collegeName || !registerNumber || !selectedImage) {
       statusBox.textContent = "Complete all fields and select an image.";
       return;
     }
@@ -473,6 +488,7 @@
         .insert([{
           student_name: studentName,
           college_name: collegeName,
+          register_number: registerNumber,
           image_path: imagePath
         }]);
 
@@ -489,8 +505,13 @@
 
     } catch (error) {
       console.error(error);
-      statusBox.textContent =
-        error.message || "Submission failed. Please try again.";
+      if (error.code === "23505") {
+        statusBox.textContent =
+          "This register number has already submitted an artwork from this college. Only one submission is allowed.";
+      } else {
+        statusBox.textContent =
+          error.message || "Submission failed. Please try again.";
+      }
     } finally {
       submitButton.disabled = false;
       submitButton.textContent = "SUBMIT YOUR ARTWORK →";
